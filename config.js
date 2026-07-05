@@ -5,6 +5,8 @@ export const config = {
   sessionFolder: "./session",
   pluginsFolder: "./plugins",
 
+  newsletterJid: "0029Vb8G49lKmCPR44sIOE1i@newsletter",
+
   apis: {
     edward: {
       baseUrl: "https://dv-edward.onrender.com",
