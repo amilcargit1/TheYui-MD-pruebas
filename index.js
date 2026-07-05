@@ -99,8 +99,8 @@ async function startMegumi() {
       forwardingScore: 999,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        // ✅ CAMBIADO AQUÍ: tu nuevo canal
-        newsletterJid: "0029Vb8G49lKmCPR44sIOE1i@newsletter",
+        // ✅ AHORA USA EL VALOR DE config.js
+        newsletterJid: config.newsletterJid,
         newsletterName: config.botName,
         serverMessageId: 143,
       },
@@ -120,7 +120,7 @@ async function startMegumi() {
   if (usePairingCode) {
     const metodo = await question(
       chalk.yellow(
-        "\n¿Cómo quieres vincular a Megumi?\n1) Código de 8 dígitos\n2) Código QR\nElige 1 o 2: "
+        "\n¿Cómo quieres vincular a TheKael-MD?\n1) Código de 8 dígitos\n2) Código QR\nElige 1 o 2: "
       )
     );
 
