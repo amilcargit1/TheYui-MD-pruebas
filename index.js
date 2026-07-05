@@ -99,6 +99,7 @@ async function startMegumi() {
       forwardingScore: 999,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
+        // ✅ CAMBIADO AQUÍ: tu nuevo canal
         newsletterJid: "0029Vb8G49lKmCPR44sIOE1i@newsletter",
         newsletterName: config.botName,
         serverMessageId: 143,
