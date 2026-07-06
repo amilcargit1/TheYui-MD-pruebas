@@ -30,7 +30,19 @@ const question = (text) =>
 let plugins = [];
 const groupMetadataCache = new Map();
 
-async function startMegumi() {
+// Pequeño helper para reintentar envíos cuando la conexión es lenta/inestable.
+async function enviarConReintento(sock, chatId, content, opciones = {}, intentos = 2) {
+  for (let i = 0; i <= intentos; i++) {
+    try {
+      return await sock.sendMessage(chatId, content, opciones);
+    } catch (err) {
+      if (i === intentos) throw err;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+  }
+}
+
+async function startBot() {
   console.log(
     chalk.cyanBright(`
 ❀════════════════════════════❀
@@ -57,6 +69,10 @@ async function startMegumi() {
     browser: Browsers.ubuntu("Chrome"),
     logger: pino({ level: "silent" }),
     syncFullHistory: false,
+    // Más tolerancia para conexiones lentas/inestables.
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 90000,
+    keepAliveIntervalMs: 25000,
     cachedGroupMetadata: async (jid) => groupMetadataCache.get(jid),
   });
 
@@ -66,7 +82,18 @@ async function startMegumi() {
       groupMetadataCache.set(chatId, metadata);
       return metadata;
     } catch (err) {
-      console.log(chalk.red("❌ Error actualizando caché del grupo:"), err);
+      const statusCode = err?.output?.statusCode;
+      if (statusCode === 403) {
+        // El bot ya no está en el grupo o WhatsApp aún no termina de
+        // sincronizar tras reconectar. No es un error grave, se ignora.
+        console.log(
+          chalk.yellow(
+            `⚠️  No se pudo leer info del grupo ${chatId} (403, probablemente el bot ya no está ahí).`
+          )
+        );
+      } else {
+        console.log(chalk.red("❌ Error actualizando caché del grupo:"), err);
+      }
       return null;
     }
   }
@@ -99,7 +126,6 @@ async function startMegumi() {
       forwardingScore: 999,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        // ✅ AHORA USA EL VALOR DE config.js
         newsletterJid: config.newsletterJid,
         newsletterName: config.botName,
         serverMessageId: 143,
@@ -131,23 +157,65 @@ async function startMegumi() {
         )
       );
 
-      setTimeout(async () => {
-        try {
-          const code = await sock.requestPairingCode(numero.trim());
+      const esperarSocketListo = async (maxEsperaMs = 20000) => {
+        const inicio = Date.now();
+        while (Date.now() - inicio < maxEsperaMs) {
+          if (sock.ws?.readyState === 1) return true; // 1 = OPEN
+          await new Promise((r) => setTimeout(r, 300));
+        }
+        return false;
+      };
+
+      (async () => {
+        console.log(
+          chalk.yellow("\n⏳ Esperando conexión con WhatsApp (puede tardar si tu internet va lento)...")
+        );
+
+        const listo = await esperarSocketListo();
+        if (!listo) {
           console.log(
-            chalk.greenBright(
-              `\n✅ Tu código de vinculación es: `
-            ) + chalk.bold.white(code)
-          );
-          console.log(
-            chalk.gray(
-              "Ve a WhatsApp > Dispositivos vinculados > Vincular con número de teléfono, e ingresa el código.\n"
+            chalk.red(
+              "❌ No se pudo establecer conexión a tiempo. Revisa tu internet (parece muy lento o inestable) e inténtalo de nuevo."
             )
           );
-        } catch (err) {
-          console.log(chalk.red("❌ Error solicitando el código de vinculación:"), err);
+          return;
         }
-      }, 3000);
+
+        const intentarPedirCodigo = async (intentosRestantes = 3) => {
+          try {
+            const code = await sock.requestPairingCode(numero.trim());
+            console.log(
+              chalk.greenBright(
+                `\n✅ Tu código de vinculación es: `
+              ) + chalk.bold.white(code)
+            );
+            console.log(
+              chalk.gray(
+                "Ve a WhatsApp > Dispositivos vinculados > Vincular con número de teléfono, e ingresa el código.\n"
+              )
+            );
+          } catch (err) {
+            if (intentosRestantes > 0) {
+              console.log(
+                chalk.yellow(
+                  `⚠️ Fallo al pedir el código, reintentando... (${intentosRestantes} intento(s) restante(s))`
+                )
+              );
+              await new Promise((r) => setTimeout(r, 2000));
+              await intentarPedirCodigo(intentosRestantes - 1);
+            } else {
+              console.log(chalk.red("❌ Error solicitando el código de vinculación:"), err);
+              console.log(
+                chalk.gray(
+                  "Sugerencias: verifica tu conexión a internet, borra la carpeta 'session' y vuelve a intentar, o usa la opción de código QR."
+                )
+              );
+            }
+          }
+        };
+
+        await intentarPedirCodigo();
+      })();
     } else {
       console.log(
         chalk.yellow(
@@ -172,7 +240,7 @@ async function startMegumi() {
         )
       );
 
-      if (shouldReconnect) startMegumi();
+      if (shouldReconnect) startBot();
     } else if (connection === "open") {
       console.log(
         chalk.greenBright(
@@ -215,18 +283,26 @@ async function startMegumi() {
       for (const participante of participants) {
         const numero = participante.split("@")[0].split(":")[0];
 
-        if (action === "add") {
-          await sock.sendMessage(chatId, {
-            text:
-              `⭐ ¡Bienvenido/a @${numero} a *${nombreGrupo}*!\n` +
-              `Esperamos que la pases increíble por aquí. ❀`,
-            mentions: [participante],
-          });
-        } else if (action === "remove") {
-          await sock.sendMessage(chatId, {
-            text: `👋 @${numero} salió de *${nombreGrupo}*. ¡Hasta pronto!`,
-            mentions: [participante],
-          });
+        try {
+          if (action === "add") {
+            await enviarConReintento(sock, chatId, {
+              text:
+                `⭐ ¡Bienvenido/a @${numero} a *${nombreGrupo}*!\n` +
+                `Esperamos que la pases increíble por aquí. ❀`,
+              mentions: [participante],
+            });
+          } else if (action === "remove") {
+            await enviarConReintento(sock, chatId, {
+              text: `👋 @${numero} salió de *${nombreGrupo}*. ¡Hasta pronto!`,
+              mentions: [participante],
+            });
+          }
+        } catch (errEnvio) {
+          console.log(
+            chalk.yellow(
+              `⚠️  No se pudo enviar bienvenida/despedida en ${chatId} (posible internet lento).`
+            )
+          );
         }
       }
     } catch (err) {
@@ -294,8 +370,18 @@ async function startMegumi() {
 
     const context = { sender, chatId, body, allPlugins: plugins };
 
+    const configGrupoActual = esGrupo ? obtenerConfigGrupo(chatId) : null;
+    const botApagadoEnGrupo =
+      esGrupo && configGrupoActual && configGrupoActual.activo === false;
+
     for (const plugin of plugins) {
       if (plugin.command.includes(primeraPalabra)) {
+        // Si el bot está apagado en este grupo, se ignora cualquier
+        // comando excepto los marcados con bypassApagado (ej. "bot on").
+        if (botApagadoEnGrupo && !plugin.bypassApagado) {
+          break;
+        }
+
         try {
           const puedeContinuar = await pasaFiltros(sock, msg, plugin, context);
           if (!puedeContinuar) break;
@@ -313,4 +399,4 @@ async function startMegumi() {
   });
 }
 
-startMegumi();
+startBot();
