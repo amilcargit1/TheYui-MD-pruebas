@@ -6,19 +6,12 @@ export function esOwner(numero) {
 
 /**
  * Verifica si el propio bot es administrador del grupo.
+ * Reutiliza la lógica robusta de esAdminDeGrupo (incluye resolución de @lid),
+ * pasando el JID del propio bot como "sender".
  */
 export async function botEsAdmin(sock, chatId) {
-  const botNumero = String(sock.user?.id || "").split("@")[0].split(":")[0].replace(/\D/g, "");
-  const metadata = await sock.groupMetadata(chatId);
-  const participantes = metadata?.participants || [];
-
-  const participante = participantes.find((p) => {
-    const pId = String(p.id || "");
-    const pNum = pId.split("@")[0].split(":")[0].replace(/\D/g, "");
-    return botNumero && pNum && botNumero === pNum;
-  });
-
-  return Boolean(participante?.admin);
+  const botJid = sock.user?.id || "";
+  return esAdminDeGrupo(sock, chatId, botJid);
 }
 
 /**
@@ -78,6 +71,64 @@ export async function esAdminDeGrupo(sock, chatId, sender) {
   }
 
   return false;
+}
+
+/**
+ * Busca a un participante del grupo por número de teléfono, soportando
+ * el caso en que WhatsApp identifica a los miembros con @lid en vez del
+ * número real (usa la libreta de contactos del bot para resolverlo).
+ */
+export async function resolverParticipante(sock, chatId, numero) {
+  const numeroLimpio = String(numero || "").replace(/\D/g, "");
+
+  let metadata;
+  try {
+    metadata = await sock.groupMetadata(chatId);
+  } catch (_) {
+    return null;
+  }
+
+  const participantes = metadata?.participants || [];
+
+  const porId = participantes.find((p) => {
+    const pNum = String(p.id || "").split("@")[0].split(":")[0].replace(/\D/g, "");
+    return numeroLimpio && pNum && numeroLimpio === pNum;
+  });
+  if (porId) return porId;
+
+  const porCampoExtra = participantes.find((p) => {
+    const candidatos = [p.jid, p.phoneNumber, p.phone, p.pn, p.lid]
+      .filter(Boolean)
+      .map((v) => String(v).split("@")[0].split(":")[0].replace(/\D/g, ""));
+    return numeroLimpio && candidatos.includes(numeroLimpio);
+  });
+  if (porCampoExtra) return porCampoExtra;
+
+  const todosSonLid =
+    participantes.length > 0 &&
+    participantes.every((p) => String(p.id || "").endsWith("@lid"));
+
+  if (todosSonLid) {
+    try {
+      const store = sock.store || sock.authState?.store;
+      const contactos = store?.contacts || sock.contacts || {};
+
+      for (const [lidKey, contacto] of Object.entries(contactos)) {
+        const cNum = String(contacto?.id || contacto?.jid || lidKey || "")
+          .split("@")[0]
+          .split(":")[0]
+          .replace(/\D/g, "");
+
+        if (numeroLimpio && cNum && cNum === numeroLimpio) {
+          const lidId = String(lidKey).includes("@") ? lidKey : `${lidKey}@lid`;
+          const porStoreLid = participantes.find((p) => String(p.id || "") === lidId);
+          if (porStoreLid) return porStoreLid;
+        }
+      }
+    } catch (_) {}
+  }
+
+  return null;
 }
 
 export async function pasaFiltros(sock, msg, plugin, context) {
