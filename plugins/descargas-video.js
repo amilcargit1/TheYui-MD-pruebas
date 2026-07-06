@@ -17,10 +17,26 @@ function bytesToMB(bytes) {
   return mb.toFixed(2) + " MB";
 }
 
+function barraProgreso(porcentaje = 100, largo = 15) {
+  const llenos = Math.round((porcentaje / 100) * largo);
+  return "▓".repeat(llenos) + "░".repeat(largo - llenos);
+}
+
+function mensajeCargando() {
+  const estados = [
+    "🔄 Inicializando motores...",
+    "🔍 Rastreando en la red neuronal...",
+    "📡 Conectando con el servidor de descargas...",
+    "⚡ Procesando paquete de datos...",
+    "🎯 Preparando el video para entrega...",
+  ];
+  return estados[Math.floor(Math.random() * estados.length)];
+}
+
 export default {
   command: ["video", "ytvideo", "mp4"],
   category: "Descargas",
-  description: "Busca un video en YouTube y lo envía. Uso: video <nombre del video>",
+  description: "Busca un video en YouTube y lo envía con estilo. Uso: video <nombre del video>",
   run: async (sock, msg, args, context) => {
     const { chatId } = context;
     const query = args.join(" ").trim();
@@ -37,7 +53,7 @@ export default {
     try {
       await sock.sendMessage(
         chatId,
-        { text: `🔎 Buscando *${query}*...` },
+        { text: `╔═══════════════════════════════╗\n║  🚀 THEKAEL-MD · VIDEO FINDER  ║\n╚═══════════════════════════════╝\n\n${mensajeCargando()}` },
         { quoted: msg }
       );
 
@@ -75,17 +91,30 @@ export default {
       const titulo = info.title || primerVideo.title || query;
       const duracion = formatearDuracion(info.duration);
       const tamaño = bytesToMB(info.size);
+      const vistas = info.views ? new Intl.NumberFormat().format(info.views) : "N/A";
+      const likes = info.likes ? new Intl.NumberFormat().format(info.likes) : "N/A";
 
       if (info.thumbnail) {
+        const caption = `╔═══════════════════════════════╗
+║  🎬 *VIDEO ENCONTRADO*        ║
+╠═══════════════════════════════╣
+║  📌 Título: ${titulo.slice(0, 40)}${titulo.length > 40 ? "…" : ""}
+║  ⏱️  Duración: ${duracion}
+║  📦 Tamaño: ${tamaño}
+║  👁️  Vistas: ${vistas}
+║  👍 Likes: ${likes}
+║  📊 Calidad: ${info.quality || "Media"}
+║  ───────────────────────────
+║  ${barraProgreso(100)} 100%
+║  ✅ Listo para enviar...
+╚═══════════════════════════════╝
+⚡ TheKael-MD · Tecnología de vanguardia`;
+
         await sock.sendMessage(
           chatId,
           {
             image: { url: info.thumbnail },
-            caption:
-              `❀ *${titulo}*\n` +
-              `⏱️ Duración: ${duracion}\n` +
-              `📦 Tamaño: ${tamaño}\n\n` +
-              `_Enviando video..._`,
+            caption: caption,
           },
           { quoted: msg }
         );
@@ -95,7 +124,7 @@ export default {
         chatId,
         {
           video: { url: info.download_url },
-          caption: `📹 ${titulo}`,
+          caption: `📹 *${titulo}*\n⏱️ ${duracion} · 📦 ${tamaño}\n\n✨ *TheKael-MD* — Más que un bot, una leyenda.`,
           fileName: `${titulo.slice(0, 60)}.mp4`,
           mimetype: "video/mp4",
         },
