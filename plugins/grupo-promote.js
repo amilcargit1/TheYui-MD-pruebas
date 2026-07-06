@@ -1,3 +1,5 @@
+import { resolverParticipante } from "../middlewares.js";
+
 export default {
   command: ["promote", "ascender"],
   category: "Grupo",
@@ -35,15 +37,7 @@ export default {
       );
     }
 
-    const metadata = await sock.groupMetadata(chatId);
-
-    const participante = metadata.participants.find((p) => {
-      const pNum = String(p.id)
-        .split("@")[0]
-        .split(":")[0]
-        .replace(/\D/g, "");
-      return pNum === numero;
-    });
+    const participante = await resolverParticipante(sock, chatId, numero);
 
     if (!participante) {
       return await sock.sendMessage(
