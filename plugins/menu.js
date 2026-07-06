@@ -6,8 +6,6 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MENU_IMAGE_PATH = path.join(__dirname, "..", "assets", "menu.jpg");
 
-// Guardamos la imagen en memoria la primera vez que se usa,
-// así no se vuelve a leer el archivo en cada "menu" (más rápido).
 let imagenMenuCache = null;
 
 async function obtenerImagenMenu() {
