@@ -1,6 +1,6 @@
 export default {
   command: ["kiss", "beso"],
-  category: "Diversión",
+  category: " Anime",
   description: "Envía un beso anime. Si respondes a alguien, le das un beso.",
   run: async (sock, msg, args, context) => {
     const { chatId, sender } = context;
