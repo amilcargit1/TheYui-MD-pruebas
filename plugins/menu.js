@@ -1,6 +1,26 @@
 import { config } from "../config.js";
 
-const MENU_IMAGE = "https://files.catbox.moe/e259p4.png";
+const MENU_IMAGE = "https://files.catbox.moe/1farsq.webp";
+
+// Guardamos la imagen en memoria la primera vez que se usa,
+// así no se vuelve a descargar de internet en cada "menu" (más rápido
+// con conexiones lentas).
+let imagenMenuCache = null;
+
+async function obtenerImagenMenu() {
+  if (imagenMenuCache) return imagenMenuCache;
+
+  try {
+    const respuesta = await fetch(MENU_IMAGE);
+    const buffer = Buffer.from(await respuesta.arrayBuffer());
+    imagenMenuCache = buffer;
+    return buffer;
+  } catch (err) {
+    // Si falla la descarga (ej. sin internet en ese instante),
+    // devolvemos null y el menú se manda solo con texto esa vez.
+    return null;
+  }
+}
 
 const ICONOS_CATEGORIA = {
   General: "💎",
@@ -60,14 +80,28 @@ export default {
     texto += `\n💎 _${config.botName} no usa prefijo — escribe el comando directo._`;
     texto += `\n🔥 _Hecho con orgullo por ${config.creator}._ 👑`;
 
-    await sock.sendMessage(
-      chatId,
-      {
-        image: { url: MENU_IMAGE },
-        caption: texto,
-        mentions: [sender],
-      },
-      { quoted: msg }
-    );
+    const imagen = await obtenerImagenMenu();
+
+    if (imagen) {
+      await sock.sendMessage(
+        chatId,
+        {
+          image: imagen,
+          caption: texto,
+          mentions: [sender],
+        },
+        { quoted: msg }
+      );
+    } else {
+      
+      await sock.sendMessage(
+        chatId,
+        {
+          text: texto,
+          mentions: [sender],
+        },
+        { quoted: msg }
+      );
+    }
   },
 };
