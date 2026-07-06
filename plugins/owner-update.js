@@ -4,7 +4,7 @@ import util from "util";
 const execute = util.promisify(exec);
 
 export default {
-  command: ["update", "gitpull", "pull"],
+  command: ["update", "gitpull", "pull", "up",],
   category: "Owner",
   description: "Actualiza el bot",
   owner: true,
