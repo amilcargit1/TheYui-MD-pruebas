@@ -9,6 +9,7 @@ import { config } from "./config.js";
 import { loadPlugins } from "./pluginLoader.js";
 import { pasaFiltros, esAdminDeGrupo } from "./middlewares.js";
 import { obtenerConfigGrupo } from "./groupSettings.js";
+import * as subbotManager from "./subbotManager.js";
 
 const {
   default: makeWASocket,
@@ -51,6 +52,7 @@ async function startBot() {
   );
 
   plugins = await loadPlugins();
+  subbotManager.setPlugins(plugins);
 
   const { state, saveCreds } = await useMultiFileAuthState(
     config.sessionFolder
@@ -145,7 +147,7 @@ async function startBot() {
   if (usePairingCode) {
     const metodo = await question(
       chalk.yellow(
-        "\n¿Cómo quieres vincular a TheKael-MD?\n1) Código de 8 dígitos\n2) Código QR\nElige 1 o 2: "
+        "\n¿Cómo quieres vincular a TheYui-MD?\n1) Código de 8 dígitos\n2) Código QR\nElige 1 o 2: "
       )
     );
 
