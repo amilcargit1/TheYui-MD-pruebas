@@ -1,5 +1,5 @@
 export default {
-  command: ["hug", "abrazo"],
+  command: ["abrazo"],
   category: "Anime",
   description: "Envía un abrazo anime. Si respondes a alguien, lo abrazas.",
   run: async (sock, msg, args, context) => {
