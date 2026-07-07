@@ -1,28 +1,24 @@
 export default {
-  command: ["abrazo"],
+  command: ["abrazo", "hug"],
   category: "Anime",
   description: "Envía un abrazo anime. Si respondes a alguien, lo abrazas.",
   run: async (sock, msg, args, context) => {
     const { chatId, sender } = context;
-    console.log("📌 Comando hug ejecutado por", sender);
 
     let mencionado = null;
 
-    if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
-      const mentions = msg.message.extendedTextMessage.contextInfo.mentionedJid;
-      if (mentions && mentions.length > 0) {
-        mencionado = mentions[0];
-      }
+    if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
+      mencionado = msg.message.extendedTextMessage.contextInfo.mentionedJid[0];
     } else if (msg.message?.extendedTextMessage?.contextInfo?.participant) {
       mencionado = msg.message.extendedTextMessage.contextInfo.participant;
     }
 
     const usuario = sender.split("@")[0];
-    let texto = `@${usuario} te ha dado un abrazo 🤗`;
+    let texto = `@${usuario} te ha dado un abrazo 🤗💕`;
 
     if (mencionado) {
       const mencionadoNum = mencionado.split("@")[0];
-      texto = `@${usuario} abrazó a @${mencionadoNum} 🤗`;
+      texto = `@${usuario} abrazó a @${mencionadoNum} 🤗💕`;
     }
 
     try {
@@ -52,7 +48,6 @@ export default {
         { quoted: msg }
       );
     } catch (error) {
-      console.error("❌ Error en comando hug:", error);
       await sock.sendMessage(
         chatId,
         {
