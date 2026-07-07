@@ -1,18 +1,14 @@
 export default {
   command: ["cuddle", "acurrucar"],
   category: "Anime",
-  description: "Envía una imagen de anime acurrucándose. Si respondes a alguien, te acurrucas con él/ella.",
+  description: "Envía una imagen de anime acurrucándose. Si respondes a alguien, te acurrucas con esa persona.",
   run: async (sock, msg, args, context) => {
     const { chatId, sender } = context;
-    console.log("📌 Comando cuddle ejecutado por", sender);
 
     let mencionado = null;
 
-    if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
-      const mentions = msg.message.extendedTextMessage.contextInfo.mentionedJid;
-      if (mentions && mentions.length > 0) {
-        mencionado = mentions[0];
-      }
+    if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
+      mencionado = msg.message.extendedTextMessage.contextInfo.mentionedJid[0];
     } else if (msg.message?.extendedTextMessage?.contextInfo?.participant) {
       mencionado = msg.message.extendedTextMessage.contextInfo.participant;
     }
@@ -22,7 +18,7 @@ export default {
 
     if (mencionado) {
       const mencionadoNum = mencionado.split("@")[0];
-      texto = `@${usuario} se acurrucó con @${mencionadoNum} 🥰`;
+      texto = `@${usuario} se acurrucó con @${mencionadoNum} 🥰💕`;
     }
 
     try {
@@ -52,7 +48,6 @@ export default {
         { quoted: msg }
       );
     } catch (error) {
-      console.error("❌ Error en comando cuddle:", error);
       await sock.sendMessage(
         chatId,
         {
