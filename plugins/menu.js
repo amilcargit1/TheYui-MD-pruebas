@@ -71,7 +71,11 @@ export default {
     let texto = `🌸┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈🌸\n`;
     texto += `   ✨ *${config.botName.toUpperCase()}* ✨\n`;
     texto += `   _Tu waifu inteligente_ 💕\n`;
-    texto += `🌸┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈🌸\n\n`;
+    texto += `🌸┈┈┈┈┈ACERCA DE MÍ.┈┈┈┈┈┈🌸
+
+Hola, soy TheYui-MD🌹🦋
+
+Tu asistente waifu😍, creada para hacer tu día más fácil y divertido. Siempre contigo🌷, siempre leal🌹\n\n`;
 
     texto += `╭─🎀 *ESTADÍSTICAS* 🎀\n`;
     texto += `│ 👤 Usuario: @${numero}\n`;
@@ -99,7 +103,7 @@ export default {
 
     texto += `\n🦋┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈🦋\n`;
     texto += `💕 _Sin prefijo — escribe el comando directo_\n`;
-    texto += `🌹 *${config.botName}* — Inteligente · Rápida · Segura · Leal 🌹`;
+    texto += `🌹 *${config.botName}* — Inteligente · Rápida · Segura · Leal 🌹❦`;
 
     const imagen = await obtenerImagenMenu();
     if (imagen) {
