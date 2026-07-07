@@ -66,6 +66,54 @@ export async function eliminarSubbot(numero) {
 }
 
 /**
+ * Recorre la carpeta ./subbots y reconecta automáticamente cualquier
+ * subbot que ya tenga una sesión válida guardada (creds.json), sin pedir
+ * código de vinculación de nuevo. Pensado para llamarse al arrancar el
+ * bot principal, así los subbots no quedan "dormidos" tras un reinicio.
+ */
+export async function reconectarSubbotsGuardados(onEstado) {
+  if (!fs.existsSync(CARPETA_SUBBOTS)) return;
+
+  const carpetas = fs
+    .readdirSync(CARPETA_SUBBOTS, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name);
+
+  if (carpetas.length === 0) return;
+
+  console.log(
+    chalk.cyan(`🦋 Revisando subbots guardados (${carpetas.length} encontrado(s))...`)
+  );
+
+  for (const numero of carpetas) {
+    const sessionFolder = path.join(CARPETA_SUBBOTS, numero);
+    const credsPath = path.join(sessionFolder, "creds.json");
+
+    if (!fs.existsSync(credsPath)) {
+      // Carpeta huérfana: nunca se terminó de vincular. Se ignora.
+      continue;
+    }
+
+    if (subbotsActivos.has(numero)) continue;
+
+    const registro = { sock: null, sessionFolder, conectado: false, numero };
+    subbotsActivos.set(numero, registro);
+
+    console.log(chalk.cyan(`🔄 Reconectando subbot guardado: ${numero}...`));
+
+    try {
+      await iniciarSocketSubbot(numero, sessionFolder, registro, {
+        onPairingCode: () => {},
+        onEstado,
+      });
+    } catch (err) {
+      console.log(chalk.red(`❌ No se pudo reconectar el subbot ${numero}:`), err);
+      subbotsActivos.delete(numero);
+    }
+  }
+}
+
+/**
  * Crea (o reconecta) un subbot para el número indicado.
  * onPairingCode(code) se llama cuando WhatsApp entrega el código de 8 dígitos.
  * onEstado(texto) se llama con actualizaciones de estado legibles para el usuario.
