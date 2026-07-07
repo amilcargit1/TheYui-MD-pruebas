@@ -55,6 +55,14 @@ async function startBot() {
   plugins = await loadPlugins();
   subbotManager.setPlugins(plugins);
 
+  subbotManager
+    .reconectarSubbotsGuardados((texto) => {
+      console.log(chalk.cyan(texto));
+    })
+    .catch((err) => {
+      console.log(chalk.red("❌ Error reconectando subbots guardados:"), err);
+    });
+
   iniciarLimpiezaAutomatica(30 * 60 * 1000, ({ archivosEliminados, bytesLiberados }) => {
     if (archivosEliminados > 0) {
       console.log(
