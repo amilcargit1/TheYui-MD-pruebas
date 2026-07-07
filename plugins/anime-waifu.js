@@ -4,15 +4,11 @@ export default {
   description: "Envía una imagen aleatoria de waifu. Si mencionas a alguien, se la dedicas.",
   run: async (sock, msg, args, context) => {
     const { chatId, sender } = context;
-    console.log("📌 Comando waifu ejecutado por", sender);
 
     let mencionado = null;
 
-    if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
-      const mentions = msg.message.extendedTextMessage.contextInfo.mentionedJid;
-      if (mentions && mentions.length > 0) {
-        mencionado = mentions[0];
-      }
+    if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
+      mencionado = msg.message.extendedTextMessage.contextInfo.mentionedJid[0];
     } else if (msg.message?.extendedTextMessage?.contextInfo?.participant) {
       mencionado = msg.message.extendedTextMessage.contextInfo.participant;
     }
@@ -32,13 +28,10 @@ export default {
         const response = await fetch("https://api.waifu.pics/sfw/waifu");
         const data = await response.json();
         imageUrl = data.url;
-        console.log("✅ Imagen obtenida de waifu.pics");
       } catch (e) {
-        console.log("⚠️ Falló waifu.pics, usando nekos.life");
         const response2 = await fetch("https://nekos.life/api/v2/img/waifu");
         const data2 = await response2.json();
         imageUrl = data2.url;
-        console.log("✅ Imagen obtenida de nekos.life");
       }
 
       if (!imageUrl) throw new Error("No se obtuvo imagen de ninguna API");
@@ -56,7 +49,6 @@ export default {
         { quoted: msg }
       );
     } catch (error) {
-      console.error("❌ Error en comando waifu:", error);
       await sock.sendMessage(
         chatId,
         {
