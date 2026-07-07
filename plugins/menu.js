@@ -25,6 +25,7 @@ const ICONOS_CATEGORIA = {
   Anime: "💕",
   Owner: "💎",
   Info: "🎀",
+  Media: "🌸", 
   Otros: "✨",
   Diversión: "🎮",
   Utilidades: "🔧",
