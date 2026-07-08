@@ -18,6 +18,7 @@ const {
 } = baileysPkg;
 
 const CARPETA_SUBBOTS = "./subbots";
+const MAX_INTENTOS_RECONEXION = 2;
 
 // Los subbots comparten la misma lista de plugins que el bot principal.
 // index.js llama a setPlugins(plugins) una vez los carga al arrancar.
@@ -31,6 +32,17 @@ const subbotsActivos = new Map();
 
 function limpiarNumero(numero) {
   return String(numero || "").replace(/\D/g, "");
+}
+
+function limpiarSubbotDeDisco(numeroLimpio, sessionFolder) {
+  subbotsActivos.delete(numeroLimpio);
+
+  try {
+    fs.rmSync(sessionFolder, { recursive: true, force: true });
+    console.log(chalk.gray(`🗑️  [Subbot ${numeroLimpio}] Carpeta de sesión eliminada.`));
+  } catch (err) {
+    console.log(chalk.red(`❌ [Subbot ${numeroLimpio}] No se pudo borrar la carpeta de sesión:`), err);
+  }
 }
 
 export function listarSubbots() {
@@ -206,20 +218,46 @@ async function iniciarSocketSubbot(numeroLimpio, sessionFolder, registro, { onPa
       registro.conectado = false;
 
       if (shouldReconnect) {
-        console.log(chalk.yellow(`⚠️  [Subbot ${numeroLimpio}] Conexión cerrada, reconectando...`));
+        registro.intentosReconexion = (registro.intentosReconexion || 0) + 1;
+
+        if (registro.intentosReconexion > MAX_INTENTOS_RECONEXION) {
+          console.log(
+            chalk.red(
+              `❌ [Subbot ${numeroLimpio}] Se agotaron los ${MAX_INTENTOS_RECONEXION} intentos de reconexión. Eliminando sesión.`
+            )
+          );
+          if (onEstado) {
+            onEstado(
+              `❌ El subbot @${numeroLimpio} no pudo reconectarse tras ${MAX_INTENTOS_RECONEXION} intentos. Se eliminó su sesión, vincúlalo de nuevo con *subbot ${numeroLimpio}*.`
+            );
+          }
+          limpiarSubbotDeDisco(numeroLimpio, sessionFolder);
+          return;
+        }
+
+        console.log(
+          chalk.yellow(
+            `⚠️  [Subbot ${numeroLimpio}] Conexión cerrada, reconectando... (intento ${registro.intentosReconexion}/${MAX_INTENTOS_RECONEXION})`
+          )
+        );
         iniciarSocketSubbot(numeroLimpio, sessionFolder, registro, { onPairingCode, onEstado }).catch(
           (err) => {
             console.log(chalk.red(`❌ [Subbot ${numeroLimpio}] Error al reconectar:`), err);
-            subbotsActivos.delete(numeroLimpio);
+            limpiarSubbotDeDisco(numeroLimpio, sessionFolder);
           }
         );
       } else {
         console.log(chalk.red(`⚠️  [Subbot ${numeroLimpio}] Sesión cerrada (logout).`));
-        if (onEstado) onEstado(`⚠️ El subbot @${numeroLimpio} cerró sesión desde el teléfono.`);
-        subbotsActivos.delete(numeroLimpio);
+        if (onEstado) {
+          onEstado(
+            `⚠️ El subbot @${numeroLimpio} cerró sesión desde el teléfono. Se eliminó su sesión guardada.`
+          );
+        }
+        limpiarSubbotDeDisco(numeroLimpio, sessionFolder);
       }
     } else if (connection === "open") {
       registro.conectado = true;
+      registro.intentosReconexion = 0;
       console.log(chalk.greenBright(`\n👑 [Subbot ${numeroLimpio}] Conectado correctamente.\n`));
       if (onEstado) onEstado(`✅ Subbot @${numeroLimpio} conectado y listo para usarse.`);
     }
