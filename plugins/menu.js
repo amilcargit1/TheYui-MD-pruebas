@@ -55,7 +55,8 @@ export default {
       categorias[categoria].push(plugin);
     }
 
-    const fecha = new Date().toLocaleString("es-HN", {
+    const fecha = new Date().toLocaleString("es-PE", {
+      timeZone: "America/Lima",
       dateStyle: "full",
       timeStyle: "short",
     });
@@ -68,10 +69,11 @@ export default {
     const uptime = formatearUptime(process.uptime());
     const nombresCategorias = Object.keys(categorias).sort();
 
-    let texto = `🌸┈┈┈┈┈┈┈┈┈┈┈┈┈🌸\n`;
+    let texto = `🌸┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈🌸\n`;
     texto += `  ✨ *${config.botName.toUpperCase()}* ✨\n`;
     texto += `  _Tu waifu inteligente_ 💕\n`;
-    texto += `🌸┈┈┈┈┈┈┈┈┈┈┈┈┈┈🌸\n\n`;
+    texto += `🌸┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈🌸\n\n`;
+
     texto += `╭─🎀 *ESTADÍSTICAS* 🎀\n`;
     texto += `│ 👤 @${numero}\n`;
     texto += `│ 💎 ${config.creator}\n`;
