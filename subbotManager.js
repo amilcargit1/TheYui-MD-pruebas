@@ -207,7 +207,12 @@ async function iniciarSocketSubbot(numeroLimpio, sessionFolder, registro, { onPa
 
       if (shouldReconnect) {
         console.log(chalk.yellow(`⚠️  [Subbot ${numeroLimpio}] Conexión cerrada, reconectando...`));
-        iniciarSocketSubbot(numeroLimpio, sessionFolder, registro, { onPairingCode, onEstado });
+        iniciarSocketSubbot(numeroLimpio, sessionFolder, registro, { onPairingCode, onEstado }).catch(
+          (err) => {
+            console.log(chalk.red(`❌ [Subbot ${numeroLimpio}] Error al reconectar:`), err);
+            subbotsActivos.delete(numeroLimpio);
+          }
+        );
       } else {
         console.log(chalk.red(`⚠️  [Subbot ${numeroLimpio}] Sesión cerrada (logout).`));
         if (onEstado) onEstado(`⚠️ El subbot @${numeroLimpio} cerró sesión desde el teléfono.`);
