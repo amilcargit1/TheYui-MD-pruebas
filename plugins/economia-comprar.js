@@ -30,6 +30,36 @@ const ITEMS = [
     nombre: "Socio Comercial",
     precio: 15000,
     efecto: "socio"
+  },
+  {
+    id: "amuleto_suerte",
+    nombre: "Amuleto de la Suerte",
+    precio: 8000,
+    efecto: "suerte"
+  },
+  {
+    id: "cafe_energetico",
+    nombre: "Café Energético",
+    precio: 6000,
+    efecto: "enfriamiento_menos"
+  },
+  {
+    id: "fabrica_stickers",
+    nombre: "Fábrica de Stickers",
+    precio: 12000,
+    efecto: "interes_plus"
+  },
+  {
+    id: "acciones_empresa",
+    nombre: "Acciones de Empresa",
+    precio: 20000,
+    efecto: "interes_plus"
+  },
+  {
+    id: "curso_financiero",
+    nombre: "Curso Financiero",
+    precio: 7000,
+    efecto: "interes_plus"
   }
 ];
 
