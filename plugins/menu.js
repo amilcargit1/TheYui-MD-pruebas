@@ -2,7 +2,6 @@ import { config } from "../config.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { esOwner } from "../middlewares.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MENU_IMAGE_PATH = path.join(__dirname, "..", "assets", "menu.jpg");
@@ -32,19 +31,6 @@ const ICONOS_CATEGORIA = {
   Seguridad: "🛡️",
 };
 
-const ORDEN_CATEGORIAS = [
-  "General",
-  "Info",
-  "Descargas",
-  "Anime",
-  "Diversión",
-  "Grupo",
-  "Seguridad",
-  "Utilidades",
-  "Otros",
-  "Owner",
-];
-
 function formatearUptime(segundos) {
   const d = Math.floor(segundos / 86400);
   const h = Math.floor((segundos % 86400) / 3600);
@@ -61,27 +47,12 @@ export default {
   description: "Muestra el menú de comandos con estilo waifu.",
   run: async (sock, msg, args, context) => {
     const { sender, chatId, allPlugins } = context;
-    const numero = sender.split("@")[0].split(":")[0];
-    const esElDueño = esOwner(numero);
-
-    // Ocultamos los comandos de Owner a quien no sea el dueño del bot,
-    // para no exponer en el menú funciones sensibles a cualquier usuario.
-    const pluginsVisibles = allPlugins.filter(
-      (p) => !p.ownerOnly || esElDueño
-    );
 
     const categorias = {};
-    for (const plugin of pluginsVisibles) {
+    for (const plugin of allPlugins) {
       const categoria = plugin.category || "Otros";
       if (!categorias[categoria]) categorias[categoria] = [];
       categorias[categoria].push(plugin);
-    }
-
-    // Ordenamos los comandos de cada categoría alfabéticamente
-    for (const categoria of Object.keys(categorias)) {
-      categorias[categoria].sort((a, b) =>
-        a.command[0].localeCompare(b.command[0])
-      );
     }
 
     const fecha = new Date().toLocaleString("es-PE", {
@@ -90,22 +61,13 @@ export default {
       timeStyle: "short",
     });
 
-    const totalComandos = pluginsVisibles.reduce(
+    const totalComandos = allPlugins.reduce(
       (acc, p) => acc + p.command.length,
       0
     );
+    const numero = sender.split("@")[0].split(":")[0];
     const uptime = formatearUptime(process.uptime());
-
-    // Orden de categorías: primero las de ORDEN_CATEGORIAS (en ese orden),
-    // luego cualquier categoría nueva que no esté en la lista, alfabética.
-    const nombresCategorias = Object.keys(categorias).sort((a, b) => {
-      const posA = ORDEN_CATEGORIAS.indexOf(a);
-      const posB = ORDEN_CATEGORIAS.indexOf(b);
-      if (posA === -1 && posB === -1) return a.localeCompare(b);
-      if (posA === -1) return 1;
-      if (posB === -1) return -1;
-      return posA - posB;
-    });
+    const nombresCategorias = Object.keys(categorias).sort();
 
     let texto = `🌸┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈🌸\n`;
     texto += `  ✨ *${config.botName.toUpperCase()}* ✨\n`;
@@ -116,7 +78,7 @@ export default {
     texto += `│ 👤 @${numero}\n`;
     texto += `│ 💎 ${config.creator}\n`;
     texto += `│ 💵 Yui  │ ⏱️ ${uptime}\n`;
-    texto += `│ ⚡ ${totalComandos} cmd  │ 📦 ${pluginsVisibles.length} plugins\n`;
+    texto += `│ ⚡ ${totalComandos} cmd  │ 📦 ${allPlugins.length} plugins\n`;
     texto += `│ 🕐 ${fecha}\n`;
     texto += `╰────────────────────╯\n\n`;
 
