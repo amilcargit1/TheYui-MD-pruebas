@@ -25,7 +25,6 @@ export function setPlugins(plugins) {
   pluginsCompartidos = plugins;
 }
 
-// numero -> { sock, sessionFolder, conectado, numero }
 const subbotsActivos = new Map();
 
 function limpiarNumero(numero) {
@@ -100,7 +99,6 @@ export async function reconectarSubbotsGuardados(onEstado) {
     const credsPath = path.join(sessionFolder, "creds.json");
 
     if (!fs.existsSync(credsPath)) {
-      // Carpeta huérfana: nunca se terminó de vincular. Se ignora.
       continue;
     }
 
@@ -311,7 +309,7 @@ async function iniciarSocketSubbot(numeroLimpio, sessionFolder, registro, { onPa
     if (!body) return;
 
     const esGrupo = chatId.endsWith("@g.us");
-    const contieneLink = /(https?:\/\/|chat\.whatsapp\.com|wa\.me\/|www\.)/i.test(body);
+    const contieneLink = /chat\.whatsapp\.com\/[a-zA-Z0-9]+/i.test(body);
 
     if (esGrupo && contieneLink) {
       const configGrupo = obtenerConfigGrupo(chatId);
@@ -332,8 +330,6 @@ async function iniciarSocketSubbot(numeroLimpio, sessionFolder, registro, { onPa
             await sock.sendMessage(chatId, { delete: msg.key });
           } catch (_) {}
 
-          // Pausa corta para no golpear la API de WhatsApp muy seguido
-          // (evita el error 429 "rate-overlimit" ante ráfagas de enlaces).
           await new Promise((r) => setTimeout(r, 800));
 
           let botAdmin = false;
