@@ -28,8 +28,6 @@ const rl = readline.createInterface({
 const question = (text) =>
   new Promise((resolve) => rl.question(text, resolve));
 
-// Evita que un error inesperado (ej. una petición de red que falla al
-// reconectar) tumbe todo el proceso y provoque reinicios en cadena.
 process.on("uncaughtException", (err) => {
   console.log(chalk.red("❌ Error no controlado (uncaughtException):"), err);
 });
@@ -41,7 +39,6 @@ process.on("unhandledRejection", (err) => {
 let plugins = [];
 const groupMetadataCache = new Map();
 
-// Pequeño helper para reintentar envíos cuando la conexión es lenta/inestable.
 async function enviarConReintento(sock, chatId, content, opciones = {}, intentos = 2) {
   for (let i = 0; i <= intentos; i++) {
     try {
@@ -100,7 +97,6 @@ async function startBot() {
     browser: Browsers.ubuntu("Chrome"),
     logger: pino({ level: "silent" }),
     syncFullHistory: false,
-    // Más tolerancia para conexiones lentas/inestables.
     connectTimeoutMs: 60000,
     defaultQueryTimeoutMs: 90000,
     keepAliveIntervalMs: 25000,
@@ -115,8 +111,6 @@ async function startBot() {
     } catch (err) {
       const statusCode = err?.output?.statusCode;
       if (statusCode === 403) {
-        // El bot ya no está en el grupo o WhatsApp aún no termina de
-        // sincronizar tras reconectar. No es un error grave, se ignora.
         console.log(
           chalk.yellow(
             `⚠️  No se pudo leer info del grupo ${chatId} (403, probablemente el bot ya no está ahí).`
@@ -326,8 +320,7 @@ async function startBot() {
     console.log(chalk.blueBright(`📩 ${numeroLimpio}: `) + body);
 
     const esGrupo = chatId.endsWith("@g.us");
-    const contieneLink =
-      /(https?:\/\/|chat\.whatsapp\.com|wa\.me\/|www\.)/i.test(body);
+    const contieneLink = /chat\.whatsapp\.com\/[a-zA-Z0-9]+/i.test(body);
 
     if (esGrupo && contieneLink) {
       const configGrupo = obtenerConfigGrupo(chatId);
@@ -348,9 +341,6 @@ async function startBot() {
             await sock.sendMessage(chatId, { delete: msg.key });
           } catch (_) {}
 
-          // Pequeña pausa para no golpear la API de WhatsApp muy seguido
-          // (evita el error 429 "rate-overlimit" cuando llegan varios
-          // enlaces casi al mismo tiempo, ej. un ataque de spam).
           await new Promise((r) => setTimeout(r, 800));
 
           let botAdmin = false;
@@ -398,8 +388,6 @@ async function startBot() {
 
     for (const plugin of plugins) {
       if (plugin.command.includes(primeraPalabra)) {
-        // Si el bot está apagado en este grupo, se ignora cualquier
-        // comando excepto los marcados con bypassApagado (ej. "bot on").
         if (botApagadoEnGrupo && !plugin.bypassApagado) {
           break;
         }
