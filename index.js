@@ -8,10 +8,11 @@ import fs from "fs";
 import { config } from "./config.js";
 import { loadPlugins } from "./pluginLoader.js";
 import { pasaFiltros, esAdminDeGrupo, botEsAdmin } from "./middlewares.js";
-import { manejarRespuestaInteractiva } from "./interactiveManager.js";
 import { obtenerConfigGrupo } from "./groupSettings.js";
 import * as subbotManager from "./subbotManager.js";
 import { iniciarLimpiezaAutomatica } from "./limpieza.js";
+import { obtenerSesionPack, registrarStickerEnSesion } from "./stickpackSessions.js";
+import { convertirImagenASticker } from "./stickerUtils.js";
 
 const {
   default: makeWASocket,
@@ -19,6 +20,7 @@ const {
   fetchLatestBaileysVersion,
   DisconnectReason,
   Browsers,
+  downloadMediaMessage,
 } = baileysPkg;
 
 const rl = readline.createInterface({
@@ -308,21 +310,32 @@ async function startBot() {
     const chatId = msg.key.remoteJid;
     const sender = msg.key.participant || msg.key.remoteJid;
 
-    const contextInteractivo = { chatId, sender, allPlugins: plugins };
-    const fueInteractivo = await manejarRespuestaInteractiva(sock, msg, contextInteractivo).catch(
-      (err) => {
-        console.log(chalk.red("❌ Error manejando respuesta interactiva:"), err);
-        return false;
-      }
-    );
-    if (fueInteractivo) return;
-
     const body =
       msg.message.conversation ||
       msg.message.extendedTextMessage?.text ||
       msg.message.imageMessage?.caption ||
       msg.message.videoMessage?.caption ||
       "";
+
+    const numeroSenderLimpio = sender.split("@")[0].split(":")[0];
+    const sesionPack = obtenerSesionPack(chatId, numeroSenderLimpio);
+
+    if (sesionPack && msg.message.imageMessage) {
+      try {
+        const buffer = await downloadMediaMessage(msg, "buffer", {});
+        const stickerFinal = await convertirImagenASticker(
+          buffer,
+          sesionPack.packName,
+          sesionPack.authorName
+        );
+
+        await sock.sendMessage(chatId, { sticker: stickerFinal }, { quoted: msg });
+        registrarStickerEnSesion(chatId, numeroSenderLimpio);
+      } catch (err) {
+        console.log(chalk.red("❌ Error convirtiendo imagen del stickpack:"), err);
+      }
+      return;
+    }
 
     if (!body) return;
 
