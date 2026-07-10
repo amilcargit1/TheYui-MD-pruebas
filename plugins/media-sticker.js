@@ -1,118 +1,96 @@
-import baileysPkg from "@whiskeysockets/baileys";
-import sharp from "sharp";
-import webp from "node-webpmux";
-
-const { downloadMediaMessage } = baileysPkg;
-
-const PACK_STICKER = "𝚃𝙷𝙴𝚈𝚄𝙸🦋";
-const AUTOR_STICKER = "© AmilcarGit 2026";
-
-async function agregarMetadataSticker(webpBuffer) {
-  const img = new webp.Image();
-
-  const json = {
-    "sticker-pack-id": "thekael-yui-md",
-    "sticker-pack-name": PACK_STICKER,
-    "sticker-pack-publisher": AUTOR_STICKER,
-    emojis: ["🦋"],
-  };
-
-  const exifAttr = Buffer.from([
-    0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
-    0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
-  ]);
-  const jsonBuffer = Buffer.from(JSON.stringify(json), "utf-8");
-  const exif = Buffer.concat([exifAttr, jsonBuffer]);
-  exif.writeUIntLE(jsonBuffer.length, 14, 4);
-
-  await img.load(webpBuffer);
-  img.exif = exif;
-
-  return await img.save(null);
-}
+import {
+  iniciarSesionPack,
+  obtenerSesionPack,
+  finalizarSesionPack,
+} from "../stickpackSessions.js";
 
 export default {
-  command: ["sticker", "s", "stiker"],
+  command: ["stickpack", "pack"],
   category: "Media",
   description:
-    "Convierte una imagen en sticker. Responde a una imagen con *sticker*, o envía la imagen con ese texto en el mensaje.",
+    "Crea un pack de stickers. Uso: stickpack <nombre> — luego manda las imágenes que quieras convertir, una por una. Escribe stickpack fin para terminar.",
 
   run: async (sock, msg, args, context) => {
-    const { chatId } = context;
+    const { chatId, sender } = context;
+    const numero = sender.split("@")[0].split(":")[0];
 
-    const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
-    const mensajeCitado = contextInfo?.quotedMessage;
+    const primerArgumento = args[0]?.toLowerCase();
 
-    let mensajeObjetivo = msg;
+    if (primerArgumento === "fin" || primerArgumento === "terminar") {
+      const sesion = finalizarSesionPack(chatId, numero);
 
-    if (mensajeCitado?.imageMessage) {
-      mensajeObjetivo = {
-        key: {
-          remoteJid: chatId,
-          id: contextInfo.stanzaId,
-          participant: contextInfo.participant,
-        },
-        message: mensajeCitado,
-      };
-    }
+      if (!sesion) {
+        return await sock.sendMessage(
+          chatId,
+          { text: "💕 No tienes ningún pack en armado ahorita." },
+          { quoted: msg }
+        );
+      }
 
-    const tieneImagen = Boolean(mensajeObjetivo.message?.imageMessage);
-    const tieneVideoOGif = Boolean(
-      mensajeObjetivo.message?.videoMessage ||
-        mensajeCitado?.videoMessage
-    );
-
-    if (!tieneImagen && !tieneVideoOGif) {
       return await sock.sendMessage(
         chatId,
         {
           text:
-            "💕 Responde a una imagen con *sticker* (o envíala junto con ese texto) para convertirla.",
+            `╭─「 🦋 *PACK TERMINADO* 」\n` +
+            `│ 📦 Nombre: ${sesion.packName}\n` +
+            `│ 🖼️ Stickers creados: ${sesion.cantidad}\n` +
+            `╰────────────────`,
         },
         { quoted: msg }
       );
     }
 
-    if (tieneVideoOGif) {
+    const nombrePack = args.join(" ").trim();
+
+    if (!nombrePack) {
+      const sesionActual = obtenerSesionPack(chatId, numero);
+
+      if (sesionActual) {
+        return await sock.sendMessage(
+          chatId,
+          {
+            text:
+              `🦋 Ya estás armando el pack *${sesionActual.packName}* (${sesionActual.cantidad} sticker(s) hasta ahora).\n\n` +
+              `Sigue mandando imágenes, o escribe *stickpack fin* para terminar.`,
+          },
+          { quoted: msg }
+        );
+      }
+
       return await sock.sendMessage(
         chatId,
         {
-          text: "⚠️ Por ahora solo puedo convertir *imágenes* a sticker, los videos/GIFs aún no.",
+          text:
+            `╭─「 🦋 *STICKPACK* 」\n` +
+            `│ Uso: *stickpack <nombre del pack>*\n` +
+            `│ Luego manda las imágenes que quieras,\n` +
+            `│ una por una, y cada una sale como\n` +
+            `│ sticker con ese nombre de pack.\n` +
+            `│\n` +
+            `│ Escribe *stickpack fin* para terminar.\n` +
+            `│ (se cierra solo tras 5 min sin uso)\n` +
+            `╰────────────────`,
         },
         { quoted: msg }
       );
     }
 
-    try {
-      const buffer = await downloadMediaMessage(mensajeObjetivo, "buffer", {});
+    iniciarSesionPack(chatId, numero, nombrePack, "© AmilcarGit 2026");
 
-      const webpBuffer = await sharp(buffer)
-        .resize(512, 512, {
-          fit: "contain",
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-        })
-        .webp({ quality: 80 })
-        .toBuffer();
-
-      let stickerFinal = webpBuffer;
-      try {
-        stickerFinal = await agregarMetadataSticker(webpBuffer);
-      } catch (errMetadata) {
-        console.log("No se pudo agregar metadata al sticker:", errMetadata);
-      }
-
-      await sock.sendMessage(
-        chatId,
-        { sticker: stickerFinal },
-        { quoted: msg }
-      );
-    } catch (err) {
-      console.log(err);
-      await sock.sendMessage(
-        chatId,
-        { text: "❌ No pude convertir la imagen a sticker. Intenta con otra imagen." },
-        { quoted: msg }
-      );
-    }
+    await sock.sendMessage(
+      chatId,
+      {
+        text:
+          `╭─「 🦋 *MODO PACK ACTIVADO* 」\n` +
+          `│ 📦 Nombre: ${nombrePack}\n` +
+          `│\n` +
+          `│ Manda las imágenes que quieras\n` +
+          `│ convertir, una por una 💕\n` +
+          `│\n` +
+          `│ Escribe *stickpack fin* cuando termines.\n` +
+          `╰────────────────`,
+      },
+      { quoted: msg }
+    );
   },
 };
