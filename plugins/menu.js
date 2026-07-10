@@ -20,16 +20,18 @@ async function obtenerImagenMenu() {
 
 const ICONOS_CATEGORIA = {
   General: "🦋",
-  Grupo: "👑",
-  Descargas: "🌹",
-  Anime: "💕",
-  Owner: "💎",
   Info: "🎀",
-  Otros: "✨",
-  Diversión: "🎮",
+  Descargas: "🌹",
   Utilidades: "🔧",
+  Grupo: "👑",
+  Economia: "💰",
+  Diversión: "🎮",
+  Anime: "💕",
   Seguridad: "🛡️",
+  Owner: "💎",
+  Otros: "✨",
 };
+  
 
 function formatearUptime(segundos) {
   const d = Math.floor(segundos / 86400);
