@@ -1,6 +1,6 @@
 # 💕🌹👑 TheYui-MD
 
-<a href='https://postimg.cc/349zxQsC' target='_blank'><img src='https://i.postimg.cc/0jqvZ8Z3/IMG-20260706-WA0062.png' border='0' alt='IMG-20260706-WA0062'></a>
+<a href='https://postimg.cc/3kC1TF51' target='_blank'><img src='https://i.postimg.cc/7ZjWSKKF/IMG-20260710-WA0011.jpg' border='0' alt='IMG-20260710-WA0011'></a>
 
 Bot de WhatsApp **sin prefijo**, construido sobre [Baileys](https://github.com/WhiskeySockets/Baileys), con carga dinámica de plugins, sistema de subbots, economía interna y moderación de grupos.
 
