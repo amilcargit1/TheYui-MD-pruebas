@@ -9,16 +9,17 @@ const pluginsPath = path.join(__dirname, "plugins");
 
 const ICONOS_CATEGORIA = {
   General: "🦋",
-  Grupo: "👑",
-  Descargas: "🌹",
-  Anime: "💕",
-  Economia: "💵",
-  Owner: "💎",
   Info: "🎀",
-  Media: "🌸",
-  Diversión: "🎮",
+  busquedas: "🔭", 
+  Descargas: "🌹",
   Utilidades: "🔧",
-  Seguridad: "🛡",
+  Grupo: "👑",
+  Economia: "💰",
+  Diversión: "🎮",
+  Anime: "💕",
+  Ai: "🦾", 
+  Seguridad: "🛡️",
+  Owner: "💎",
   Otros: "✨",
 };
 
