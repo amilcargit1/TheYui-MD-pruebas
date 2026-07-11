@@ -7,6 +7,37 @@ import { config } from "./config.js";
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const pluginsPath = path.join(__dirname, "plugins");
 
+const ICONOS_CATEGORIA = {
+  General: "🦋",
+  Grupo: "👑",
+  Descargas: "🌹",
+  Anime: "💕",
+  Economia: "💵",
+  Owner: "💎",
+  Info: "🎀",
+  Media: "🌸",
+  Diversión: "🎮",
+  Utilidades: "🔧",
+  Seguridad: "🛡",
+  Otros: "✨",
+};
+
+const ANCHO = 40;
+
+function lineaCaja(texto = "", color = (t) => t) {
+  const visible = texto.replace(/\x1b\[[0-9;]*m/g, "");
+  const relleno = Math.max(0, ANCHO - visible.length - 4);
+  return chalk.magentaBright("│ ") + color(texto) + " ".repeat(relleno) + chalk.magentaBright(" │");
+}
+
+function bordeSuperior() {
+  return chalk.magentaBright("╭" + "─".repeat(ANCHO - 2) + "╮");
+}
+
+function bordeInferior() {
+  return chalk.magentaBright("╰" + "─".repeat(ANCHO - 2) + "╯");
+}
+
 /**
  * Carga todos los plugins de la carpeta /plugins de forma dinámica.
  * Cada plugin debe exportar por defecto un objeto:
@@ -29,9 +60,9 @@ export async function loadPlugins() {
     .readdirSync(pluginsPath)
     .filter((file) => file.endsWith(".js"));
 
-  const total = files.length;
+  const total = files.length || 1;
 
-  for (let i = 0; i < total; i++) {
+  for (let i = 0; i < files.length; i++) {
     const file = files[i];
 
     try {
@@ -49,17 +80,16 @@ export async function loadPlugins() {
       errores.push({ file, err });
     }
 
-    const cargados = plugins.length;
-    const barraLargo = 20;
+    const barraLargo = 18;
     const llenos = Math.round(((i + 1) / total) * barraLargo);
     const barra = "▓".repeat(llenos) + "░".repeat(barraLargo - llenos);
 
     process.stdout.write(
-      `\r🦋 Cargando plugins ${chalk.cyan(barra)} ${i + 1}/${total} `
+      `\r🦋 ${chalk.magentaBright(barra)} ${i + 1}/${total}  `
     );
   }
 
-  process.stdout.write("\n");
+  process.stdout.write("\n\n");
 
   const categorias = {};
   for (const p of plugins) {
@@ -67,25 +97,39 @@ export async function loadPlugins() {
     categorias[cat] = (categorias[cat] || 0) + 1;
   }
 
-  console.log(chalk.magentaBright(`\n╭─「 📦 *${config.botName}* 」`));
-  console.log(chalk.green(`│ ✅ ${plugins.length} plugin(s) cargado(s) correctamente`));
+  console.log(bordeSuperior());
+  console.log(lineaCaja(`🌹 ${config.botName}`, chalk.white.bold));
+  console.log(lineaCaja(`✅ ${plugins.length} plugin(s) cargado(s)`, chalk.green));
 
-  for (const [cat, cantidad] of Object.entries(categorias).sort()) {
-    console.log(chalk.gray(`│    · ${cat}: ${cantidad}`));
-  }
-
-  if (invalidos.length > 0) {
-    console.log(chalk.yellow(`│ ⚠️  ${invalidos.length} inválido(s): ${invalidos.join(", ")}`));
-  }
-
-  if (errores.length > 0) {
-    console.log(chalk.red(`│ ❌ ${errores.length} con error al cargar:`));
-    for (const { file, err } of errores) {
-      console.log(chalk.red(`│    · ${file} → ${err.message || err}`));
+  const nombresCategorias = Object.entries(categorias).sort();
+  if (nombresCategorias.length > 0) {
+    console.log(chalk.magentaBright("├" + "─".repeat(ANCHO - 2) + "┤"));
+    for (const [cat, cantidad] of nombresCategorias) {
+      const icono = ICONOS_CATEGORIA[cat] || "✨";
+      console.log(lineaCaja(`${icono} ${cat}: ${cantidad}`, chalk.gray));
     }
   }
 
-  console.log(chalk.magentaBright(`╰────────────────────────\n`));
+  if (invalidos.length > 0) {
+    console.log(chalk.magentaBright("├" + "─".repeat(ANCHO - 2) + "┤"));
+    console.log(lineaCaja(`⚠️ ${invalidos.length} inválido(s)`, chalk.yellow));
+    for (const file of invalidos) {
+      console.log(lineaCaja(`  · ${file}`, chalk.yellow));
+    }
+  }
+
+  if (errores.length > 0) {
+    console.log(chalk.magentaBright("├" + "─".repeat(ANCHO - 2) + "┤"));
+    console.log(lineaCaja(`❌ ${errores.length} con error`, chalk.red));
+    for (const { file, err } of errores) {
+      const mensaje = String(err.message || err).slice(0, 30);
+      console.log(lineaCaja(`  · ${file}`, chalk.red));
+      console.log(lineaCaja(`    ${mensaje}`, chalk.red));
+    }
+  }
+
+  console.log(bordeInferior());
+  console.log("");
 
   return plugins;
 }
