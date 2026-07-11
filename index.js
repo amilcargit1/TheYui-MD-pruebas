@@ -11,8 +11,6 @@ import { pasaFiltros, esAdminDeGrupo, botEsAdmin } from "./middlewares.js";
 import { obtenerConfigGrupo } from "./groupSettings.js";
 import * as subbotManager from "./subbotManager.js";
 import { iniciarLimpiezaAutomatica } from "./limpieza.js";
-import { obtenerSesionPack, registrarStickerEnSesion } from "./stickpackSessions.js";
-import { convertirImagenASticker } from "./stickerUtils.js";
 
 const {
   default: makeWASocket,
@@ -20,7 +18,6 @@ const {
   fetchLatestBaileysVersion,
   DisconnectReason,
   Browsers,
-  downloadMediaMessage,
 } = baileysPkg;
 
 const rl = readline.createInterface({
@@ -316,26 +313,6 @@ async function startBot() {
       msg.message.imageMessage?.caption ||
       msg.message.videoMessage?.caption ||
       "";
-
-    const numeroSenderLimpio = sender.split("@")[0].split(":")[0];
-    const sesionPack = obtenerSesionPack(chatId, numeroSenderLimpio);
-
-    if (sesionPack && msg.message.imageMessage) {
-      try {
-        const buffer = await downloadMediaMessage(msg, "buffer", {});
-        const stickerFinal = await convertirImagenASticker(
-          buffer,
-          sesionPack.packName,
-          sesionPack.authorName
-        );
-
-        await sock.sendMessage(chatId, { sticker: stickerFinal }, { quoted: msg });
-        registrarStickerEnSesion(chatId, numeroSenderLimpio);
-      } catch (err) {
-        console.log(chalk.red("❌ Error convirtiendo imagen del stickpack:"), err);
-      }
-      return;
-    }
 
     if (!body) return;
 
