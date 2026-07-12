@@ -1,16 +1,19 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 export const config = {
   botName: "TheYui-MD",
   creator: "AmilcarGit",
-  ownerNumber: "51910227479",
+  ownerNumber: process.env.OWNER_NUMBER || "",
   sessionFolder: "./session",
   pluginsFolder: "./plugins",
 
-  newsletterJid: "0029Vb8G49lKmCPR44sIOE1i@newsletter",
+  newsletterJid: process.env.NEWSLETTER_JID || "",
 
   apis: {
     edward: {
-      baseUrl: "https://dv-edward.onrender.com",
-      apiKey: "TheEly-MD",
+      baseUrl: process.env.EDWARD_API_BASE_URL || "",
+      apiKey: process.env.EDWARD_API_KEY || "",
     },
   },
 };
